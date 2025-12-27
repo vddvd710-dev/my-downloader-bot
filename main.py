@@ -1,15 +1,31 @@
 import telebot
 import yt_dlp
 import os
+from flask import Flask
+from threading import Thread
 
+# --- إعداد خادم وهمي لإبقاء Render سعيداً ---
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "I am alive!"
+
+def run():
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# --- كود البوت الأساسي ---
 TOKEN = '6692891979:AAHptNMWADSbaEQeo1va7ojB-wdrb89IwkM'
 bot = telebot.TeleBot(TOKEN)
 
 def download_video(url):
-    # خيارات متوافقة مع سيرفرات Render
     ydl_opts = {
         'format': 'best',
-        'outtmpl': '/tmp/video.mp4', # استخدام مجلد /tmp المسموح بالكتابة فيه
+        'outtmpl': '/tmp/video.mp4',
         'nocheckcertificate': True,
         'quiet': True
     }
@@ -18,11 +34,11 @@ def download_video(url):
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "مرحباً! أنا الآن أعمل من منصة Render القوية. أرسل لي أي رابط فيديو.")
+    bot.reply_to(message, "مرحباً! البوت يعمل الآن بنظام 24/7 على Render. أرسل الرابط.")
 
 @bot.message_handler(func=lambda message: "http" in message.text)
 def handle_download(message):
-    temp_msg = bot.reply_to(message, "جاري التحميل من Render... 🚀")
+    temp_msg = bot.reply_to(message, "جاري التحميل... 🚀")
     video_path = '/tmp/video.mp4'
     try:
         download_video(message.text)
@@ -34,5 +50,9 @@ def handle_download(message):
         if os.path.exists(video_path): os.remove(video_path)
     finally:
         bot.delete_message(message.chat.id, temp_msg.message_id)
+
+if __name__ == "__main__":
+    keep_alive()  # تشغيل الخادم الوهمي في الخلفية
+    bot.infinity_polling()
 
 bot.infinity_polling()
